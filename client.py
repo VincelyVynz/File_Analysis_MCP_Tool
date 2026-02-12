@@ -1,4 +1,4 @@
-import os
+import os, asyncio, json
 from dotenv import load_dotenv
 from groq import Groq
 from fastmcp import Client
@@ -56,3 +56,84 @@ tools = [
         }
     }
 ]
+
+# Call LLM
+
+async def handle_turn(user_input, mcp_client):
+    messages.append({
+        "role": "user",
+        "content": user_input
+    })
+
+    response = groq_client.chat.completions.create(
+        model = LLM_MODEL,
+        messages = messages,
+        tools = tools,
+        tool_choice = "auto"
+    )
+
+    # Extract text reply from LLM response
+    msg = response.choices[0].message
+
+    # Adding to message history
+    messages.append({msg})
+
+    if msg.tool_calls:
+        for tool_call in msg.tool_calls:
+            tool_name = tool_call.function.name
+            raw_args = json.loads(tool_call.function.arguments)
+
+            try:
+                call_result = await mcp_client.call_tool(tool_name, raw_args)
+
+                if call_result.is_error:
+                    result_text = f"Error: {call_result.content}"
+                else:
+                    result_text = ""
+                    if hasattr(call_result, 'content') and isinstance(call_result.content, list):
+                        for content in call_result.content:
+                            if hasattr(content, 'text'):
+                                result_text += content.text
+                            else:
+                                result_text += str(content)
+                    else:
+                        result_text = str(call_result)
+
+            except Exception as e:
+                result_text = f"Error: {str(e)}"
+
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": result_text
+            })
+
+        final_response = groq_client.chat.completions.create(
+            model = LLM_MODEL,
+            messages = messages,
+        )
+
+        final_msg = final_response.choices[0].message
+        print(final_msg.content)
+        messages.append(final_msg)
+
+    else:
+        print(msg.content)
+
+    if len(messages) > MAX_MEMORY:
+        messages[:] = [messages[0]] + messages[-MAX_MEMORY:]
+
+
+async def main():
+    print("FastMCP File Analysis Bot")
+    print("Type 'exit' or 'quit' to quit\n\n")
+
+    async with Client(MCP_SERVER_URL) as mcp_client:
+        while True:
+            user_input = input("You: ")
+            if user_input.lower() in ["exit", "quit"]:
+                break
+            await handle_turn(user_input, mcp_client)
+
+if __name__ == "__main__":
+    asyncio.run(main())
