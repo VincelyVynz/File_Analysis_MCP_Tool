@@ -54,6 +54,20 @@ tools = [
                 "required": ["filepath"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name" : "read_excel",
+            "description": "Read contents of an Excel file and return a pandas dictionary",
+            "parameters" : {
+                "type" : "object",
+                "properties" : {
+                    "filepath" : {"type" : "string"},
+                },
+                "required" : ["filepath"]
+            }
+        }
     }
 ]
 
