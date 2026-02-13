@@ -13,4 +13,4 @@ def read_txt(filepath :str):
 
 
 if __name__ == "__main__":
-    mcp.run(transport= 'http', host = "127.0.0.1")
+    mcp.run(transport="http", host="127.0.0.1")

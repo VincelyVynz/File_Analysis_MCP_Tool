@@ -7,7 +7,7 @@ load_dotenv()
 
 LLM_MODEL = "meta-llama/llama-4-maverick-17b-128e-instruct"
 MAX_MEMORY = 10
-MCP_SERVER_URL = "http://127.0.0.1/8000/mcp"
+MCP_SERVER_URL = "http://127.0.0.1:8000/mcp"
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
@@ -19,7 +19,7 @@ messages = [
             You are a file analysis assistant.
             
             CRITICAL TOOL USAGE RULES:
-            - Only call a tool when the user gives a clear, specific, and explicit instruction to perform a database operation.
+            - Only call a tool when the user gives a clear, specific, and explicit instruction to perform an operation.
             - If the user is asking a question about capability, DO NOT call any tools.
             - If required parameters (like file path) are missing, ask for clarification instead of calling a tool.
             - Never assume values.
@@ -76,7 +76,7 @@ async def handle_turn(user_input, mcp_client):
     msg = response.choices[0].message
 
     # Adding to message history
-    messages.append({msg})
+    messages.append(msg)
 
     if msg.tool_calls:
         for tool_call in msg.tool_calls:
